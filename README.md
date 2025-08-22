@@ -11,6 +11,9 @@ py-toolbox 是一个 Python 工具箱，旨在收集日常开发工程中高频�
 ```
 py-toolbox/
 ├── common_utils/
+│   ├── config/
+│   │   ├── config_loader.py  # 配置加载核心文件
+│   │   └── example.py        # 使用示例
 │   ├── logging/
 │   │   ├── logger.py     # 日志配置核心文件
 │   │   └── example.py    # 使用示例
@@ -60,6 +63,33 @@ if __name__ == "__main__":
 - 单例模式确保配置只执行一次，重复调用会警告并跳过。
 - 无效级别会抛 ValueError。
 - 完整示例见 common_utils/logging/example.py。
+
+### config 模块
+config 模块提供基于 dotenv 的配置加载器，支持从 .env 文件或系统环境变量读取配置。使用 Borg 模式实现单例，确保全局唯一实例。位置：common_utils/config/config_loader.py。
+
+#### 基本用法
+1. 导入：`from common_utils.config.config_loader import config`
+2. 获取配置：使用 `config.get(key, default=None, cast=None)` 方法。
+
+#### 配置选项
+- `key`: 环境变量名称 (str)。
+- `default`: 默认值 (可选，如果未找到 key)。
+- `cast`: 类型转换 (e.g., int, float, bool)。
+
+#### 示例
+```python
+# 假设 .env 文件中有 API_KEY=secret123
+api_key = config.get("API_KEY")  # 返回 'secret123'
+
+# 带默认值和类型转换
+port = config.get("PORT", default=8080, cast=int)  # 如果未设置，返回 8080 (int)
+debug = config.get("DEBUG", default=False, cast=bool)  # 支持布尔转换
+```
+
+#### 注意事项
+- 自动加载 .env 文件（如果存在），否则使用系统环境变量。
+- 类型转换失败会抛 ValueError。
+- 完整示例见 common_utils/config/example.py。
 
 更多模块用法将在添加新模块时更新。
 
