@@ -1,0 +1,87 @@
+name: Code Quality Check
+
+# 触发条件
+on:
+  # 推送到主分支
+  push:
+    branches: [ main, master ]
+  
+  # Pull Request 到主分支
+  pull_request:
+    branches: [ main, master ]
+  
+  # 手动触发
+  workflow_dispatch:
+
+# 并发控制：取消同一分支的旧构建
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  code-quality:
+    name: 代码质量检查
+    runs-on: ubuntu-latest
+    
+    steps:
+    # 1. 检出代码
+    - name: 检出代码
+      uses: actions/checkout@v4
+    
+    # 2. 安装 uv
+    - name: 安装 uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        version: "latest"
+        enable-cache: true
+    
+    # 3. 设置 Python 版本
+    - name: 设置 Python 版本
+      run: uv python install 3.12
+    
+    # 4. 安装项目依赖
+    - name: 安装依赖
+      run: |
+        uv sync --dev
+        uv add --dev ruff
+    
+    # 5. 显示环境信息
+    - name: 显示环境信息
+      run: |
+        echo "🔧 环境信息："
+        uv --version
+        uv run python --version
+        uv run ruff --version
+    
+    # 6. 运行 ruff 代码检查
+    - name: Ruff 代码质量检查
+      run: |
+        echo "🔍 开始代码质量检查..."
+        uv run ruff check . --output-format=github
+      continue-on-error: false
+    
+    # 7. 运行 ruff 格式检查
+    - name: Ruff 代码格式检查
+      run: |
+        echo "📐 检查代码格式..."
+        uv run ruff format . --check --diff
+      continue-on-error: false
+    
+    # 8. 代码统计信息
+    - name: 代码统计信息
+      if: always()
+      run: |
+        echo "📊 代码统计信息："
+        echo "----------------------------------------"
+        python_files=$(find . -name "*.py" -not -path "./.venv/*" -not -path "./__pycache__/*" | wc -l)
+        total_lines=$(find . -name "*.py" -not -path "./.venv/*" -not -path "./__pycache__/*" -exec cat {} \; | wc -l)
+        echo "Python 文件数量: $python_files"
+        echo "总代码行数: $total_lines"
+        echo "----------------------------------------"
+    
+    # 9. 检查结果总结
+    - name: 检查结果
+      if: always()
+      run: |
+        echo "✅ 代码质量检查完成！"
+        echo "如果所有检查都通过，说明代码符合项目质量标准。"
